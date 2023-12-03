@@ -43,6 +43,18 @@ int struct_register(char *struct_name,unsigned int struct_size,unsigned int fiel
 	return struct_database_add(info);
 }
 
+struct_info_t* struct_database_look_up(char *struct_name)
+{
+	if(!struct_db) return NULL;
+	struct_info_t *node = struct_db->head;
+	while(node) {
+		if(!strcmp(node->name,struct_name))
+			return node;
+		node = node->next;
+	}
+	return NULL;
+}
+
 void print_struct_info(struct_info_t *struct_info)
 {
 	if(!struct_info) {
@@ -81,5 +93,4 @@ void print_struct_db() {
 		print_struct_info(node);
 		node = node->next;
 	}
-	
 }

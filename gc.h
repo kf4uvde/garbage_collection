@@ -41,6 +41,7 @@ typedef struct _struct_db_{
 void print_struct_info (struct_info_t *struct_info);
 void print_struct_db();
 int struct_register(char *struct_name,unsigned int struct_size,unsigned int field_num,field_info_t *fields_array);
+struct_info_t* struct_database_look_up(char *struct_name);
 
 //register marco
 #define FIELD_EXTEND(struct_name, fld_name, dtype, nested_struct) {#fld_name,dtype,FIELD_SIZE(struct_name,fld_name),OFFSETOF(struct_name,fld_name),#nested_struct}
