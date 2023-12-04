@@ -46,3 +46,23 @@ struct_info_t* struct_database_look_up(char *struct_name);
 //register marco
 #define FIELD_EXTEND(struct_name, fld_name, dtype, nested_struct) {#fld_name,dtype,FIELD_SIZE(struct_name,fld_name),OFFSETOF(struct_name,fld_name),#nested_struct}
 #define STRUCT_REGISTER(struct_name,fields_array) struct_register(#struct_name,(unsigned int)sizeof(struct_name),(unsigned int)sizeof(fields_array)/sizeof(field_info_t),fields_array)
+
+
+//object-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+typedef struct _object_info_{
+    struct _object_info_ *next;
+    void *ptr;
+    unsigned int units;
+    struct_info_t *struct_info;
+}object_info_t;
+
+typedef struct _object_db_{
+    //struct_db_t *struct_db;???
+    object_info_t *head;
+    unsigned int count;
+} object_db_t;
+
+
+void print_object_info(object_info_t *obj_info);
+void print_object_db();
+void* jalloc(char *struct_name, int units);

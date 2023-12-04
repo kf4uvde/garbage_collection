@@ -94,3 +94,76 @@ void print_struct_db() {
 		node = node->next;
 	}
 }
+
+
+//object-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+object_db_t *object_db = NULL;
+
+static void object_database_add(object_info_t* object_info) {
+	if(!object_db) {
+		object_db = (object_db_t*) calloc(1,sizeof(object_db_t));
+		if(!object_db) {
+			printf("object database allocate memory fail\n");
+			return;
+		}
+	}
+	
+	object_info_t *head = object_db->head;
+	if(head) {
+		object_info->next = head;
+		object_db->head = object_info;
+		object_db->count++;
+	}
+	else {
+		object_db->head = object_info;
+		object_db->count = 1;
+	}
+}
+
+void* jalloc(char *struct_name, int units) {
+	struct_info_t* struct_info = (struct_info_t*) struct_database_look_up(struct_name);
+	if(!struct_info) {
+		printf("there is no %s struct",struct_name);
+		return NULL;
+	}
+	
+	object_info_t* object_info = (object_info_t*) calloc(1, sizeof(object_info));
+	if(!object_info) {
+		printf("object info allocate memory fail\n");
+		return NULL;
+	}
+	
+	void *ptr = calloc(units,struct_info->size);
+	if(!ptr) {
+		printf("object allocate memory fail\n");
+		free(object_info);
+		return NULL;
+	}
+	
+    object_info->next = NULL;
+    object_info->ptr = ptr;
+    object_info->units = units;
+    object_info->struct_info = struct_info;
+	object_database_add(object_info);
+	return ptr;
+}
+
+void print_object_info(object_info_t *obj_info) {
+	if(!obj_info) return;
+	printf("|----------------------------------------------------------------------------------------|\n");
+    printf("|ptr = %-10p | next = %-15p | units = %-4d | struct_name = %-10s |\n",obj_info->ptr,obj_info->next,obj_info->units,obj_info->struct_info->name);
+	printf("|----------------------------------------------------------------------------------------|\n");
+}
+
+void print_object_db() {
+	if(!object_db) return;
+	printf("Print object database\n");
+	
+	object_info_t *node = object_db->head;
+	int i;
+	for(i = 0;i<object_db->count;i++) {
+		print_object_info(node);
+		node = node->next;
+	}
+	
+}
