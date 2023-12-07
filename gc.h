@@ -64,5 +64,7 @@ typedef struct _object_db_{
 
 
 void print_object_info(object_info_t *obj_info);
+void print_object_info_detail(object_info_t *obj_info);
 void print_object_db();
 void* jalloc(char *struct_name, int units);
+void jfree(void *ptr);
