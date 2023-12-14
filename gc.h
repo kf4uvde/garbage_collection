@@ -12,9 +12,14 @@ typedef enum {
 	UINT32,
 	FLOAT,
 	DOUBLE,
-	OBJ_PTR,
-	OBJ_STRUCT
+	OBJ_STRUCT,
+	OBJ_PTR
 } data_type_t;
+
+typedef enum{
+    False,
+    True
+} bool_t;
 
 typedef struct _field_info_{
 	char name[MAX_FIELD_NAME_LENGTH];
@@ -54,6 +59,8 @@ typedef struct _object_info_{
     void *ptr;
     unsigned int units;
     struct_info_t *struct_info;
+	bool_t is_visited; /*Used for Graph traversal*/
+    bool_t is_root;  
 }object_info_t;
 
 typedef struct _object_db_{
@@ -68,3 +75,9 @@ void print_object_info_detail(object_info_t *obj_info);
 void print_object_db();
 void* jalloc(char *struct_name, int units);
 void jfree(void *ptr);
+
+void register_root_object(void *obj,char *struct_name);
+void set_object_as_root(void *ptr);
+
+void Set_all_reachable_obj_to_visited();
+void report_leaked_objects();

@@ -6,7 +6,7 @@
 
 
 char *data_type_str[] ={"CHAR","INT32","UINT8","UINT32","FLOAT","DOUBLE","OBJ_PTR","OBJ_STRUCT"};
-char *data_type_format_specifier[] ={"%s","%d","%hhu","%u","%f","%lf","%p","%p"};
+//char *data_type_format_specifier[] ={"%s","%d","%hhu","%u","%f","%lf","%p","%p"};
 
 struct_db_t *struct_db = NULL;
 void print_struct_info (struct_info_t *struct_info);
@@ -130,54 +130,49 @@ void print_object_info(object_info_t *obj_info) {
 	printf("|----------------------------------------------------------------------------------------|\n");
 }
 
-char* get_format_specifier(data_type_t dtype){
-	if((int)dtype<8) {
-		return data_type_format_specifier[dtype];
-	}
-	return "no value";
-}
 void print_object_info_detail(object_info_t *obj_info) {
 	if(!obj_info) return;
 	
 	struct_info_t *struct_info = obj_info->struct_info;
-
+	
 	unsigned int unit;
 	for(unit=0;unit<obj_info->units;unit++)
 	{
 		int i;
+		char* current_obj = obj_info->ptr + unit*struct_info->size;
 		for(i=0;i<struct_info->fields_num;i++) {
-			printf("%s[%d]->%s = %s\n",struct_info->name,unit,struct_info->fields[i].name,get_format_specifier(struct_info->fields[i].dtype));
+			
+			printf("%s[%d]->%s = ",struct_info->name,unit,struct_info->fields[i].name);
+			
+			data_type_t dtype = struct_info->fields[i].dtype;
+			
+			switch(dtype) {
+				case CHAR:
+					printf("%s",current_obj+struct_info->fields[i].offset);
+				case INT32:
+					printf("%d",*(int*)(current_obj+struct_info->fields[i].offset));
+					break;
+				case UINT8:
+					printf("%hhu",*(unsigned char*)(current_obj+struct_info->fields[i].offset));
+					break;
+				case UINT32:
+					printf("%u",*(unsigned int*)(current_obj+struct_info->fields[i].offset));
+					break;
+				case FLOAT:
+					printf("%f",*(float*)(current_obj+struct_info->fields[i].offset));
+					break;
+				case DOUBLE:
+					printf("%lf",*(double*)(current_obj+struct_info->fields[i].offset));
+					break;
+				case OBJ_PTR:
+				case OBJ_STRUCT:
+					printf("%p",current_obj+struct_info->fields[i].offset);
+					break;
+			}
+			printf("\n");
 		}
 	}
 }
-/*
- struct _object_info_ *next;
-    void *ptr;
-    unsigned int units;
-    struct_info_t *struct_info;
-*/
-
-
-/*
-typedef struct _struct_info_t{
-	struct _struct_info_t *next;
-	char name[MAX_STRUCTURE_NAME_LENGTH];
-	unsigned int size;
-	unsigned int fields_num;
-	field_info_t *fields;
-}struct_info_t;
-*/
-
-/*
-typedef struct _field_info_{
-	char name[MAX_FIELD_NAME_LENGTH];
-	data_type_t dtype;
-	unsigned int size;
-	unsigned int offset;
-	char nested_struct[MAX_STRUCTURE_NAME_LENGTH];
-} field_info_t;
-*/
-
 
 void print_object_db() {
 	if(!object_db) return;
@@ -215,6 +210,8 @@ void* jalloc(char *struct_name, int units) {
     object_info->ptr = ptr;
     object_info->units = units;
     object_info->struct_info = struct_info;
+	object_info->is_visited = False;
+    object_info->is_root = False; 
 	object_database_add(object_info);
 	return ptr;
 }
@@ -251,3 +248,96 @@ void jfree(void *ptr) {
 	free(object_info->ptr);
 	free(object_info);
 }
+
+//----------------------------------------------------------------------------
+
+void register_root_object(void *obj,char *struct_name) {
+	struct_info_t* struct_info = (struct_info_t*) struct_database_look_up(struct_name);
+	if(!struct_info) {
+		printf("there is no %s struct",struct_name);
+		return;
+	}
+	
+	((object_info_t*)obj)->is_root = True; 
+	object_database_add(obj);	
+}
+
+void set_object_as_root(void *ptr) {
+	object_info_t* object_info = take_object_from_db(ptr);
+	assert(object_info);
+	
+	object_info->is_root = True;
+}
+
+static void Set_reachable_obj_by_root(object_info_t *root) {
+	unsigned int i , fields_num;
+	char *root_obj_ptr = NULL;
+	char *connect_obj_ptr = NULL;
+	object_info_t *connect_object_info;
+	struct_info_t *root_struct_info = root->struct_info;
+	field_info_t *field;
+	
+	
+	for(i=0; i<root->units; i++) {
+		
+		root_obj_ptr = (char *)root->ptr + i*root_struct_info->size;
+		
+		for(fields_num=0; fields_num < root_struct_info->fields_num; fields_num++){
+			field = &root_struct_info->fields[fields_num];
+			
+			if(field->dtype != OBJ_PTR) {break;}
+			connect_obj_ptr = root_obj_ptr + field->offset;
+			if(*connect_obj_ptr==NULL) continue;
+			
+			connect_object_info = take_object_from_db(*connect_obj_ptr);
+			assert(connect_object_info);
+			
+			if(connect_object_info->is_visited == False) {
+				connect_object_info->is_visited = True;
+				Set_reachable_obj_by_root(connect_object_info);
+			}
+		}
+	}
+}
+
+void Set_all_reachable_obj_to_visited(){
+
+    if(!object_db) {return;}
+	object_info_t *node = object_db->head;
+	if(!node) {return;}
+	while(node != NULL)
+	{
+		node->is_visited = False;
+		node = node->next;
+	}
+
+	node = object_db->head;
+	while(node != NULL)
+	{
+		if(node->is_root == False) {node = node->next;continue;}
+		if(node->is_visited == True) {node = node->next;continue;}
+		node->is_visited = True;
+		
+		Set_reachable_obj_by_root(node);
+		node = node->next;
+	}
+}
+
+void report_leaked_objects(){
+
+    object_info_t *node = object_db->head;
+
+    printf("Dumping Leaked Objects\n");
+
+	while(node) {
+		if(node->is_visited == False){
+			print_object_info(node);
+			printf("\n");
+            print_object_info_detail(node);
+            printf("\n\n");
+        }
+		node = node->next;
+	}
+}
+    
+    
