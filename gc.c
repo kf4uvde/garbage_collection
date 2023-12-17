@@ -17,6 +17,9 @@ int struct_database_add(struct_info_t *struct_info)
 	if(!struct_db) {
 		struct_db = (struct_db_t*) calloc(1,sizeof(struct_db_t));
 		if(!struct_db) return 1;
+		STRUCT_REGISTER(int , 0);
+		STRUCT_REGISTER(float , 0);
+		STRUCT_REGISTER(double , 0);
 	}
 
 	if(!struct_db->head) {
@@ -277,6 +280,7 @@ static void Set_reachable_obj_by_root(object_info_t *root) {
 	struct_info_t *root_struct_info = root->struct_info;
 	field_info_t *field;
 	
+	if(root_struct_info->fields_num<=0) {return;} //to handle void*
 	
 	for(i=0; i<root->units; i++) {
 		
