@@ -6,8 +6,7 @@
 
 
 char *data_type_str[] ={"CHAR","INT32","UINT8","UINT32","FLOAT","DOUBLE","OBJ_PTR","OBJ_STRUCT"};
-//char *data_type_format_specifier[] ={"%s","%d","%hhu","%u","%f","%lf","%p","%p"};
-
+//struct & field-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 struct_db_t *struct_db = NULL;
 void print_struct_info (struct_info_t *struct_info);
 void print_struct_db();
@@ -252,8 +251,6 @@ void jfree(void *ptr) {
 	free(object_info);
 }
 
-//----------------------------------------------------------------------------
-
 void register_root_object(void *obj,char *struct_name) {
 	struct_info_t* struct_info = (struct_info_t*) struct_database_look_up(struct_name);
 	if(!struct_info) {
@@ -328,10 +325,11 @@ void Set_all_reachable_obj_to_visited(){
 }
 
 void report_leaked_objects(){
-
+	
+	Set_all_reachable_obj_to_visited();
     object_info_t *node = object_db->head;
 
-    printf("Dumping Leaked Objects\n");
+    printf("\nDumping Leaked Objects\n");
 
 	while(node) {
 		if(node->is_visited == False){
